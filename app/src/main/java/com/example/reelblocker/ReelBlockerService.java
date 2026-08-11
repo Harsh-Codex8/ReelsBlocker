@@ -16,11 +16,9 @@ public class ReelBlockerService extends AccessibilityService {
             if (packageName.equals("com.google.android.youtube")) {
                 AccessibilityNodeInfo rootNode = getRootInActiveWindow();
                 if (rootNode != null) {
-                    // Search screen nodes to see if it's currently playing a Short
                     if (isViewingShorts(rootNode)) {
-                        // Instantly steps back out of the Shorts player to your current page
+                        // Instantly steps back out of the Shorts player
                         performGlobalAction(GLOBAL_ACTION_BACK);
-                        Toast.makeText(this, "Shorts Blocked!", Toast.LENGTH_SHORT).show();
                     }
                     rootNode.recycle();
                 }
@@ -29,12 +27,23 @@ public class ReelBlockerService extends AccessibilityService {
     }
 
     private boolean isViewingShorts(AccessibilityNodeInfo node) {
-        // Look for layout elements unique to the YouTube Shorts player
-        if (node.getViewIdResourceName() != null && 
-            node.getViewIdResourceName().contains("reel_player")) {
+        if (node == null) return false;
+
+        // Check view IDs or content descriptions commonly used in YouTube Shorts
+        CharSequence viewId = node.getViewIdResourceName();
+        CharSequence contentDesc = node.getContentDescription();
+
+        if (viewId != null && (viewId.toString().contains("reel_player") || 
+                               viewId.toString().contains("shorts") ||
+                               viewId.toString().contains("reel_watch"))) {
             return true;
         }
-        
+
+        if (contentDesc != null && contentDesc.toString().toLowerCase().contains("short")) {
+            return true;
+        }
+
+        // Recursively check child elements
         for (int i = 0; i < node.getChildCount(); i++) {
             AccessibilityNodeInfo child = node.getChild(i);
             if (child != null) {
